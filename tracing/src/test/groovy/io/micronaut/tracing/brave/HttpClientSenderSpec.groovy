@@ -79,11 +79,6 @@ class HttpClientSenderSpec extends Specification {
         HttpClient client = context.createBean(HttpClient, embeddedServer.getURL())
         PollingConditions conditions = new PollingConditions(timeout: 10)
         // mock Zipkin server
-        EmbeddedServer zipkinServer = ApplicationContext.run(
-                EmbeddedServer,
-                ['micronaut.server.port':9411]
-        )
-        SpanController spanController = zipkinServer.applicationContext.getBean(SpanController)
         StartedListener listener = zipkinServer.applicationContext.getBean(StartedListener)
 
         then:
