@@ -78,6 +78,8 @@ class HttpClientSenderSpec extends Specification {
         EmbeddedServer embeddedServer = context.getBean(EmbeddedServer).start()
         HttpClient client = context.createBean(HttpClient, embeddedServer.getURL())
         PollingConditions conditions = new PollingConditions(timeout: 10)
+
+        when:
         // mock Zipkin server
         StartedListener listener = zipkinServer.applicationContext.getBean(StartedListener)
 
@@ -136,6 +138,8 @@ class HttpClientSenderSpec extends Specification {
 
         PollingConditions conditions = new PollingConditions(timeout: 10)
         CustomPathSpanController customPathSpanController = zipkinServer.applicationContext.getBean(CustomPathSpanController)
+
+        when:
         StartedListener listener = zipkinServer.applicationContext.getBean(StartedListener)
 
         then:
