@@ -3,6 +3,7 @@ package io.micronaut.docs.http.server.bind
 import io.micronaut.context.ApplicationContext
 import io.micronaut.core.type.Argument
 import io.micronaut.http.HttpRequest
+import io.micronaut.http.MediaType
 import io.micronaut.http.client.RxHttpClient
 import io.micronaut.http.client.exceptions.HttpClientResponseException
 import io.micronaut.http.cookie.Cookie
@@ -30,6 +31,13 @@ class ShoppingCartControllerSpec extends Specification {
         def ex = thrown(HttpClientResponseException)
         ex.getMessage() == "Required ShoppingCart [sessionId] not specified"
 
+    }
+
+    void testBindingCustomBody() {
+        when:
+        String response = client.toBlocking().retrieve(HttpRequest.POST("/customBinding/customBody","BODY").contentType(MediaType.TEXT_PLAIN_TYPE))
+        then:
+        response == "Body:BODY"
     }
 
     void testAnnotationBinding() {
