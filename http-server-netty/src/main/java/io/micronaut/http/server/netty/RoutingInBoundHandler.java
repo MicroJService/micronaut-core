@@ -73,7 +73,7 @@ import io.micronaut.http.multipart.StreamingFileUpload;
 import io.micronaut.http.netty.AbstractNettyHttpRequest;
 import io.micronaut.http.netty.NettyHttpResponseBuilder;
 import io.micronaut.http.netty.NettyMutableHttpResponse;
-import io.micronaut.http.netty.content.HttpContentUtil;
+import io.micronaut.http.netty.stream.JsonSubscriber;
 import io.micronaut.http.netty.stream.StreamedHttpRequest;
 import io.micronaut.http.server.binding.RequestArgumentSatisfier;
 import io.micronaut.http.server.exceptions.ExceptionHandler;
@@ -290,7 +290,7 @@ class RoutingInBoundHandler extends SimpleChannelInboundHandler<io.micronaut.htt
     private void exceptionCaughtInternal(ChannelHandlerContext ctx,
                                          Throwable t,
                                          NettyHttpRequest nettyHttpRequest,
-                                         boolean nettyException) {
+                                         boolean skipOncePerRequest) {
         RouteMatch<?> errorRoute = null;
         // find the origination of of the route
         RouteMatch<?> originalRoute = nettyHttpRequest.getMatchedRoute();
@@ -361,11 +361,11 @@ class RoutingInBoundHandler extends SimpleChannelInboundHandler<io.micronaut.htt
                         ctx,
                         ctx.executor(),
                         true,
-                        nettyException,
+                        skipOncePerRequest,
                         null
                 );
             } catch (Throwable e) {
-                writeDefaultErrorResponse(ctx, nettyHttpRequest, e, nettyException);
+                writeDefaultErrorResponse(ctx, nettyHttpRequest, e, skipOncePerRequest);
             }
         } else {
 
@@ -379,7 +379,7 @@ class RoutingInBoundHandler extends SimpleChannelInboundHandler<io.micronaut.htt
                         Object result = handler.handle(nettyHttpRequest, cause);
                         return errorResultToResponse(result);
                     });
-                    filterPublisher(new AtomicReference<HttpRequest<?>>(nettyHttpRequest), routePublisher, nettyException)
+                    filterPublisher(new AtomicReference<HttpRequest<?>>(nettyHttpRequest), routePublisher, skipOncePerRequest)
                             .subscribe(new CompletionAwareSubscriber<MutableHttpResponse<?>>() {
 
                                 MutableHttpResponse<?> mutableHttpResponse;
@@ -396,7 +396,7 @@ class RoutingInBoundHandler extends SimpleChannelInboundHandler<io.micronaut.htt
 
                                 @Override
                                 public void doOnError(Throwable throwable) {
-                                    writeDefaultErrorResponse(ctx, nettyHttpRequest, throwable, nettyException);
+                                    writeDefaultErrorResponse(ctx, nettyHttpRequest, throwable, skipOncePerRequest);
                                 }
 
                                 @Override
@@ -416,7 +416,7 @@ class RoutingInBoundHandler extends SimpleChannelInboundHandler<io.micronaut.htt
                         logException(cause);
                     }
                 } catch (Throwable e) {
-                    writeDefaultErrorResponse(ctx, nettyHttpRequest, e, nettyException);
+                    writeDefaultErrorResponse(ctx, nettyHttpRequest, e, skipOncePerRequest);
                 }
             } else {
                 if (isIgnorable(cause)) {
@@ -427,7 +427,7 @@ class RoutingInBoundHandler extends SimpleChannelInboundHandler<io.micronaut.htt
                             ctx,
                             nettyHttpRequest,
                             cause,
-                            nettyException);
+                            skipOncePerRequest);
                 }
             }
         }
@@ -1317,8 +1317,6 @@ class RoutingInBoundHandler extends SimpleChannelInboundHandler<io.micronaut.htt
                                 NettyByteBufferFactory byteBufferFactory = new NettyByteBufferFactory(context.alloc());
 
                                 Publisher<HttpContent> httpContentPublisher = Publishers.map(bodyPublisher, new Function<Object, HttpContent>() {
-                                    boolean first = true;
-
                                     @Override
                                     public HttpContent apply(Object message) {
                                         HttpContent httpContent;
@@ -1347,44 +1345,15 @@ class RoutingInBoundHandler extends SimpleChannelInboundHandler<io.micronaut.htt
                                             ByteBuffer<ByteBuf> encoded = codec.encode(message, byteBufferFactory);
                                             httpContent = new DefaultHttpContent(encoded.asNativeBuffer());
                                         }
-                                        if (!isJson || first) {
-                                            first = false;
-                                            return httpContent;
-                                        } else {
-                                            return HttpContentUtil.prefixComma(httpContent);
-                                        }
+                                        return httpContent;
                                     }
                                 });
 
                                 if (isJson) {
                                     // if the Publisher is returning JSON then in order for it to be valid JSON for each emitted element
                                     // we must wrap the JSON in array and delimit the emitted items
-                                    httpContentPublisher = Flowable.concat(
-                                            Flowable.fromCallable(HttpContentUtil::openBracket),
-                                            httpContentPublisher,
-                                            Flowable.fromCallable(HttpContentUtil::closeBracket)
-                                    );
-                                }
-
-                                if (mediaType.equals(MediaType.TEXT_EVENT_STREAM_TYPE)) {
-                                    httpContentPublisher = Publishers.onComplete(httpContentPublisher, () -> {
-                                        CompletableFuture<Void> future = new CompletableFuture<>();
-                                        if (!request.getHeaders().isKeepAlive()) {
-                                            if (context.channel().isOpen()) {
-                                                context.pipeline()
-                                                        .writeAndFlush(new DefaultLastHttpContent())
-                                                        .addListener(f -> {
-                                                                    if (f.isSuccess()) {
-                                                                        future.complete(null);
-                                                                    } else {
-                                                                        future.completeExceptionally(f.cause());
-                                                                    }
-                                                                }
-                                                        );
-                                            }
-                                        }
-                                        return future;
-                                    });
+                                    httpContentPublisher = Flowable.fromPublisher(httpContentPublisher)
+                                            .lift((FlowableOperator<HttpContent, HttpContent>) JsonSubscriber::new);
                                 }
 
                                 httpContentPublisher = Publishers.then(httpContentPublisher, httpContent ->
@@ -1436,7 +1405,7 @@ class RoutingInBoundHandler extends SimpleChannelInboundHandler<io.micronaut.htt
             @Override
             protected void doOnError(Throwable t) {
                 final NettyHttpRequest nettyHttpRequest = (NettyHttpRequest) requestReference.get();
-                exceptionCaughtInternal(context, t, nettyHttpRequest, false);
+                exceptionCaughtInternal(context, t, nettyHttpRequest, true);
             }
         });
     }
