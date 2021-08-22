@@ -15,20 +15,19 @@
  */
 package io.micronaut.http.netty.channel;
 
-import io.micronaut.core.annotation.NonNull;
-import io.micronaut.core.annotation.Nullable;
 import io.micronaut.context.annotation.BootstrapContextCompatible;
 import io.micronaut.context.annotation.Primary;
+import io.micronaut.core.annotation.NonNull;
+import io.micronaut.core.annotation.Nullable;
 import io.micronaut.core.util.ArgumentUtils;
 import io.micronaut.http.netty.configuration.NettyGlobalConfiguration;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.util.ResourceLeakDetector;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
@@ -105,6 +104,11 @@ public class DefaultEventLoopGroupFactory implements EventLoopGroupFactory {
         return getFactory(configuration).serverSocketChannelClass(configuration);
     }
 
+    @Override
+    public ServerSocketChannel serverSocketChannelInstance(EventLoopGroupConfiguration configuration) {
+        return getFactory(configuration).serverSocketChannelInstance(configuration);
+    }
+
     @NonNull
     @Override
     public Class<? extends SocketChannel> clientSocketChannelClass(@Nullable EventLoopGroupConfiguration configuration) {
@@ -117,6 +121,12 @@ public class DefaultEventLoopGroupFactory implements EventLoopGroupFactory {
         } else {
             return this.defaultFactory;
         }
+    }
+
+    @NonNull
+    @Override
+    public SocketChannel clientSocketChannelInstance(@Nullable EventLoopGroupConfiguration configuration) {
+        return getFactory(configuration).clientSocketChannelInstance(configuration);
     }
 
 }

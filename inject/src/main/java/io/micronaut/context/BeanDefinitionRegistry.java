@@ -82,7 +82,7 @@ public interface BeanDefinitionRegistry {
      * compiled ahead of time.</p>
      * <p>
      * <p>If bean definition data is found the method will perform dependency injection on the instance followed by
-     * invoking any {@link javax.annotation.PostConstruct} hooks.</p>
+     * invoking any {@link jakarta.annotation.PostConstruct} hooks.</p>
      * <p>
      * <p>If no bean definition data is found the bean is registered as is.</p>
      *
@@ -152,10 +152,7 @@ public interface BeanDefinitionRegistry {
      * @since 3.0.0
      */
     default @NonNull <T> Optional<BeanDefinition<T>> findBeanDefinition(@NonNull Argument<T> beanType) {
-        return findBeanDefinition(
-                Objects.requireNonNull(beanType, "Bean type cannot be null").getType(),
-                null
-        );
+        return findBeanDefinition(beanType, null);
     }
 
     /**
@@ -286,7 +283,7 @@ public interface BeanDefinitionRegistry {
      * @return The beans
      * @since 2.4.0
      */
-    @NonNull <T> Collection<BeanRegistration<T>> getBeanRegistrations(@NonNull Class<T> beanType, @NonNull Qualifier<T> qualifier);
+    @NonNull <T> Collection<BeanRegistration<T>> getBeanRegistrations(@NonNull Class<T> beanType, @Nullable Qualifier<T> qualifier);
 
     /**
      * Find and if necessary initialize {@link javax.inject.Singleton} beans for the given bean type, returning all the active registrations. Note that
@@ -298,7 +295,7 @@ public interface BeanDefinitionRegistry {
      * @return The beans
      * @since 3.0.0
      */
-    default @NonNull <T> Collection<BeanRegistration<T>> getBeanRegistrations(@NonNull Argument<T> beanType, @NonNull Qualifier<T> qualifier) {
+    default @NonNull <T> Collection<BeanRegistration<T>> getBeanRegistrations(@NonNull Argument<T> beanType, @Nullable Qualifier<T> qualifier) {
         return getBeanRegistrations(
                 Objects.requireNonNull(beanType, "Bean type cannot be null").getType(),
                 qualifier
@@ -315,7 +312,7 @@ public interface BeanDefinitionRegistry {
      * @throws NoSuchBeanException if the bean doesn't exist
      * @since 2.4.0
      */
-    @NonNull <T> BeanRegistration<T> getBeanRegistration(@NonNull Class<T> beanType, @NonNull Qualifier<T> qualifier);
+    @NonNull <T> BeanRegistration<T> getBeanRegistration(@NonNull Class<T> beanType, @Nullable Qualifier<T> qualifier);
 
     /**
      * Find a bean registration for the given bean type and optional qualifier.
@@ -327,7 +324,7 @@ public interface BeanDefinitionRegistry {
      * @throws NoSuchBeanException if the bean doesn't exist
      * @since 3.0.0
      */
-    default @NonNull <T> BeanRegistration<T> getBeanRegistration(@NonNull Argument<T> beanType, @NonNull Qualifier<T> qualifier) {
+    default @NonNull <T> BeanRegistration<T> getBeanRegistration(@NonNull Argument<T> beanType, @Nullable Qualifier<T> qualifier) {
         return getBeanRegistration(
                 Objects.requireNonNull(beanType, "Bean type cannot be null").getType(),
                 qualifier
@@ -377,11 +374,23 @@ public interface BeanDefinitionRegistry {
     @NonNull <T> Optional<BeanDefinition<T>> findProxyBeanDefinition(@NonNull Class<T> beanType, @Nullable Qualifier<T> qualifier);
 
     /**
+     * Obtain the original {@link BeanDefinition} for a {@link io.micronaut.inject.ProxyBeanDefinition}.
+     *
+     * @param beanType  The type
+     * @param qualifier The qualifier
+     * @param <T>       The concrete type
+     * @return An {@link Optional} of the bean definition
+     * @throws io.micronaut.context.exceptions.NonUniqueBeanException When multiple possible bean definitions exist
+     *                                                                for the given type
+     */
+    @NonNull <T> Optional<BeanDefinition<T>> findProxyBeanDefinition(@NonNull Argument<T> beanType, @Nullable Qualifier<T> qualifier);
+
+    /**
      * <p>Registers a new singleton bean at runtime. This method expects that the bean definition data will have been
      * compiled ahead of time.</p>
      * <p>
      * <p>If bean definition data is found the method will perform dependency injection on the instance followed by
-     * invoking any {@link javax.annotation.PostConstruct} hooks.</p>
+     * invoking any {@link jakarta.annotation.PostConstruct} hooks.</p>
      * <p>
      * <p>If no bean definition data is found the bean is registered as is.</p>
      *
@@ -404,7 +413,7 @@ public interface BeanDefinitionRegistry {
      * compiled ahead of time.</p>
      * <p>
      * <p>If bean definition data is found the method will perform dependency injection on the instance followed by
-     * invoking any {@link javax.annotation.PostConstruct} hooks.</p>
+     * invoking any {@link jakarta.annotation.PostConstruct} hooks.</p>
      * <p>
      * <p>If no bean definition data is found the bean is registered as is.</p>
      *
@@ -529,7 +538,7 @@ public interface BeanDefinitionRegistry {
      * compiled ahead of time.</p>
      * <p>
      * <p>If bean definition data is found the method will perform dependency injection on the instance followed by
-     * invoking any {@link javax.annotation.PostConstruct} hooks.</p>
+     * invoking any {@link jakarta.annotation.PostConstruct} hooks.</p>
      * <p>
      * <p>If no bean definition data is found the bean is registered as is.</p>
      *
@@ -547,7 +556,7 @@ public interface BeanDefinitionRegistry {
      * compiled ahead of time.</p>
      * <p>
      * <p>If bean definition data is found the method will perform dependency injection on the instance followed by
-     * invoking any {@link javax.annotation.PostConstruct} hooks.</p>
+     * invoking any {@link jakarta.annotation.PostConstruct} hooks.</p>
      * <p>
      * <p>If no bean definition data is found the bean is registered as is.</p>
      *

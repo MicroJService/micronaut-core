@@ -1,3 +1,4 @@
-io.micronaut.inject.provider.JavaxProviderBeanDefinitionReference
-io.micronaut.inject.provider.BeanProviderDefinitionReference
-io.micronaut.inject.provider.JakartaProviderBeanDefinitionReference
+io.micronaut.inject.provider.JavaxProviderBeanDefinition
+io.micronaut.inject.provider.BeanProviderDefinition
+io.micronaut.inject.provider.JakartaProviderBeanDefinition
+io.micronaut.context.event.ApplicationEventPublisherFactory

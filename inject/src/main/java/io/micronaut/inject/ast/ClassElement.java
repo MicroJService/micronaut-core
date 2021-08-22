@@ -21,9 +21,12 @@ import io.micronaut.core.annotation.Nullable;
 import io.micronaut.core.naming.NameUtils;
 import io.micronaut.core.util.ArgumentUtils;
 import io.micronaut.core.annotation.NonNull;
+import io.micronaut.inject.ast.beans.BeanElementBuilder;
 
 import java.util.*;
 import java.util.function.Predicate;
+
+import static io.micronaut.inject.writer.BeanDefinitionVisitor.PROXY_SUFFIX;
 
 /**
  * Stores data about an element that references a class.
@@ -41,6 +44,17 @@ public interface ClassElement extends TypedElement {
      * @return {@code true} if and only if the this type is assignable to the second
      */
     boolean isAssignable(String type);
+
+    /**
+     * In this case of calling {@link #getTypeArguments()} a returned {@link ClassElement} may represent a type variable
+     * in which case this method will return {@code true}.
+     *
+     * @return Is this type a type variable.
+     * @since 3.0.0
+     */
+    default boolean isTypeVariable() {
+        return false;
+    }
 
     /**
      * Tests whether one type is assignable to another.
@@ -104,6 +118,13 @@ public interface ClassElement extends TypedElement {
     }
 
     /**
+     * @return True if the class represents a proxy
+     */
+    default boolean isProxy() {
+        return getSimpleName().endsWith(PROXY_SUFFIX);
+    }
+
+    /**
      * Find and return a single primary constructor. If more than constructor candidate exists, then return empty unless a
      * constructor is found that is annotated with either {@link io.micronaut.core.annotation.Creator} or {@link javax.inject.Inject}.
      *
@@ -132,6 +153,13 @@ public interface ClassElement extends TypedElement {
         return Optional.empty();
     }
 
+    /**
+     * @return The interfaces implemented by this class element
+     */
+    default Collection<ClassElement> getInterfaces() {
+        return Collections.emptyList();
+    }
+
     @NonNull
     @Override
     default ClassElement getType() {
@@ -155,6 +183,16 @@ public interface ClassElement extends TypedElement {
      */
     default String getPackageName() {
         return NameUtils.getPackageName(getName());
+    }
+
+    /**
+     * The package name.
+     *
+     * @return The package name
+     * @since 3.0.0
+     */
+    default PackageElement getPackage() {
+        return PackageElement.of(getPackageName());
     }
 
     /**
@@ -198,6 +236,16 @@ public interface ClassElement extends TypedElement {
      */
     default <T extends Element> List<T> getEnclosedElements(@NonNull ElementQuery<T> query) {
         return Collections.emptyList();
+    }
+
+    /**
+     * Returns the enclosing type if {@link #isInner()} return {@code true}.
+     *
+     * @return The enclosing type if any
+     * @since 3.0.0
+     */
+    default Optional<ClassElement> getEnclosingType() {
+        return Optional.empty();
     }
 
     /**
@@ -304,6 +352,19 @@ public interface ClassElement extends TypedElement {
     @NonNull ClassElement fromArray();
 
     /**
+     * This method adds an associated bean using this class element as the originating element.
+     *
+     * <p>Note that this method can only be called on classes being directly compiled by Micronaut. If the ClassElement is
+     * loaded from pre-compiled code an {@link UnsupportedOperationException} will be thrown.</p>
+     * @param type The type of the bean
+     * @return A bean builder
+     */
+    default @NonNull
+    BeanElementBuilder addAssociatedBean(@NonNull ClassElement type) {
+        throw new UnsupportedOperationException("Element of type [" + getClass() + "] does not support adding associated beans at compilation time");
+    }
+
+    /**
      * Create a class element for the given simple type.
      * @param type The type
      * @return The class element
@@ -362,6 +423,19 @@ public interface ClassElement extends TypedElement {
      */
     @Internal
     static @NonNull ClassElement of(@NonNull String typeName, boolean isInterface, @Nullable AnnotationMetadata annotationMetadata) {
+        return new SimpleClassElement(typeName, isInterface, annotationMetadata);
+    }
+
+    /**
+     * Create a class element for the given simple type.
+     * @param typeName The type
+     * @param isInterface Is the type an interface
+     * @param annotationMetadata The annotation metadata
+     * @param typeArguments The type arguments
+     * @return The class element
+     */
+    @Internal
+    static @NonNull ClassElement of(@NonNull String typeName, boolean isInterface, @Nullable AnnotationMetadata annotationMetadata, Map<String, ClassElement> typeArguments) {
         return new SimpleClassElement(typeName, isInterface, annotationMetadata);
     }
 }

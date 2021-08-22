@@ -19,7 +19,7 @@ import io.micronaut.context.ApplicationContext
 import io.micronaut.context.DefaultApplicationContext
 import io.micronaut.context.env.PropertySource
 import io.micronaut.context.exceptions.BeanInstantiationException
-import io.micronaut.inject.AbstractTypeElementSpec
+import io.micronaut.annotation.processing.test.AbstractTypeElementSpec
 import io.micronaut.inject.BeanDefinition
 import io.micronaut.inject.ValidatedBeanDefinition
 import spock.lang.Specification
@@ -36,9 +36,11 @@ class ValidatedConfigurationSpec extends AbstractTypeElementSpec {
         ValidatedConfig config = applicationContext.getBean(ValidatedConfig)
 
         then:
+        applicationContext.getBeanDefinition(ValidatedConfig) instanceof ValidatedBeanDefinition
         def e = thrown(BeanInstantiationException)
         e.message.contains('url - must not be null')
         e.message.contains('name - must not be blank')
+
 
         cleanup:
         applicationContext.close()

@@ -6,10 +6,13 @@ dependencies {
     api(dependencyVersion("spock")) {
         exclude module:'groovy-all'
     }
+    api project(":context")
 }
 
 afterEvaluate {
     sourcesJar {
-        from sourceSets.main.allSource
+        from "$projectDir/src/main/groovy"
+        duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
     }
 }
+
